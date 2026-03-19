@@ -55,8 +55,8 @@ export default function ClienteProductosPage() {
             <button className="btn" onClick={() => navigate('/cliente/carrito')}>
               🛒 Carrito
             </button>
-            <button className="btn" onClick={cerrarSesion}>
-              ↪ Cerrar Sesión
+            <button className="btn" onClick={() => navigate('/home')}>
+              ← Volver al Inicio
             </button>
           </div>
         </div>

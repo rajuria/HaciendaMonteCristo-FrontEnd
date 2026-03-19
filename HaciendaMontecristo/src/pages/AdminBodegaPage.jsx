@@ -86,8 +86,8 @@ export default function AdminBodegaPage() {
               <button className="btn">Revisar Cancelaciones</button>
             </Link>
 
-            <button className="btn" onClick={cerrarSesion}>
-              ↪ Cerrar Sesión
+            <button className="btn" onClick={() => navigate('/home')}>
+              ← Volver al Inicio
             </button>
           </div>
         </div>

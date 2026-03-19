@@ -18,8 +18,8 @@ export default function PedidosAsignadoPage() {
             <small>Vendedor: {usuario?.usuario || 'Usuario'}</small>
           </div>
 
-          <button className="btn" onClick={cerrarSesion}>
-            ↪ Cerrar Sesión
+          <button className="btn" onClick={() => navigate('/home')}>
+            ← Volver al Inicio
           </button>
         </div>
       </header>

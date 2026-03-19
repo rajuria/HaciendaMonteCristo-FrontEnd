@@ -31,7 +31,6 @@ export default function AdminSistemaClientesPage() {
               <button className="btn">Reportes</button>
             </Link>
 
-            {/* 🔥 CAMBIO AQUÍ */}
             <button className="btn" onClick={() => navigate('/home')}>
               ← Volver al Inicio
             </button>
