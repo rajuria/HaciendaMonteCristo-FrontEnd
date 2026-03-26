@@ -2,22 +2,22 @@ import { useEffect, useState } from 'react'
 import '../styles/pages.css'
 
 export default function EditarProductoModal({ producto, onClose, onSave }) {
+  // 1. Alineamos el estado con las columnas de tu base de datos
   const [formData, setFormData] = useState({
-    id: '',
-    codigo: '',
-    nombre: '',
-    precio: '',
-    stock: '',
+    productID: '',
+    name: '',
+    currentPrice: '',
+    currentStock: '',
   })
 
+  // 2. Cargamos los datos exactos del producto cuando se abre el modal
   useEffect(() => {
     if (producto) {
       setFormData({
-        id: producto.id,
-        codigo: producto.codigo,
-        nombre: producto.nombre,
-        precio: producto.precio,
-        stock: producto.stock,
+        productID: producto.productID || '',
+        name: producto.name || '',
+        currentPrice: producto.currentPrice !== undefined ? producto.currentPrice : '',
+        currentStock: producto.currentStock !== undefined ? producto.currentStock : '',
       })
     }
   }, [producto])
@@ -33,24 +33,26 @@ export default function EditarProductoModal({ producto, onClose, onSave }) {
   const handleSubmit = (e) => {
     e.preventDefault()
 
+    // 3. Validar usando las llaves nuevas
     if (
-      !formData.nombre.toString().trim() ||
-      formData.precio === '' ||
-      formData.stock === ''
+      !formData.name?.toString().trim() ||
+      formData.currentPrice === '' ||
+      formData.currentStock === ''
     ) {
       alert('Complete todos los campos editables.')
       return
     }
 
+    // 4. Formatear el objeto para enviarlo de vuelta a AdminBodegaPage
     const productoActualizado = {
-      ...formData,
-      nombre: formData.nombre.trim(),
-      precio: Number(formData.precio),
-      stock: Number(formData.stock),
+      productID: formData.productID, // Necesitamos esto para la URL del PUT
+      name: formData.name.trim(),
+      currentPrice: Number(formData.currentPrice),
+      currentStock: Number(formData.currentStock),
     }
 
     onSave(productoActualizado)
-    onClose()
+    // Se elimina el onClose() para que AdminBodegaPage lo maneje solo si el API responde 200 OK
   }
 
   if (!producto) return null
@@ -71,13 +73,13 @@ export default function EditarProductoModal({ producto, onClose, onSave }) {
 
         <form onSubmit={handleSubmit}>
           <div className="field">
-            <label>Código</label>
+            <label>Código (ID del Producto)</label>
             <input
               className="input input-disabled"
-              type="text"
-              name="codigo"
-              value={formData.codigo}
-              disabled
+              type="number"
+              name="productID"
+              value={formData.productID}
+              disabled // El ID no se debe cambiar según tu controlador de backend
             />
           </div>
 
@@ -86,8 +88,8 @@ export default function EditarProductoModal({ producto, onClose, onSave }) {
             <input
               className="input"
               type="text"
-              name="nombre"
-              value={formData.nombre}
+              name="name" // Actualizado
+              value={formData.name} // Actualizado
               onChange={handleChange}
             />
           </div>
@@ -97,8 +99,8 @@ export default function EditarProductoModal({ producto, onClose, onSave }) {
             <input
               className="input"
               type="number"
-              name="precio"
-              value={formData.precio}
+              name="currentPrice" // Actualizado
+              value={formData.currentPrice} // Actualizado
               onChange={handleChange}
               min="0"
               step="0.01"
@@ -110,8 +112,8 @@ export default function EditarProductoModal({ producto, onClose, onSave }) {
             <input
               className="input"
               type="number"
-              name="stock"
-              value={formData.stock}
+              name="currentStock" // Actualizado
+              value={formData.currentStock} // Actualizado
               onChange={handleChange}
               min="0"
             />

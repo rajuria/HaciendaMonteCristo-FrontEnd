@@ -1,117 +1,88 @@
 import { useState } from 'react'
-import '../styles/pages.css'
 
-export default function RegistrarClienteModal({ onClose }) {
+export default function RegistrarClienteModal({ onClose, onRefresh }) {
   const [formData, setFormData] = useState({
-    nombre: '',
-    correo: '',
-    telefono: '',
-    direccion: '',
+    RTN: '', 
+    name: '',
+    email: '',
+    telephoneNumber: '',
+    address: '',
   })
 
   const handleChange = (e) => {
     const { name, value } = e.target
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }))
+    setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
 
-    if (
-      !formData.nombre.trim() ||
-      !formData.correo.trim() ||
-      !formData.telefono.trim() ||
-      !formData.direccion.trim()
-    ) {
-      alert('Complete todos los campos.')
+    if (!formData.RTN || !formData.name || !formData.email || !formData.telephoneNumber) {
+      alert('RTN, Nombre, Email y Teléfono son obligatorios.')
       return
     }
 
-    alert('Cliente creado con éxito.')
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/clients/create`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            RTN: formData.RTN,
+            name: formData.name,
+            email: formData.email,
+            telephoneNumber: formData.telephoneNumber,
+            address: formData.address,
+            status: 'Activo'
+        })
+      })
 
-    setFormData({
-      nombre: '',
-      correo: '',
-      telefono: '',
-      direccion: '',
-    })
-
-    onClose()
+      if (response.ok) {
+        alert('Cliente registrado con éxito.')
+        onRefresh()
+        onClose()
+      } else {
+        const error = await response.json()
+        alert('Error: ' + error.error)
+      }
+    } catch (err) {
+      alert('Error de conexión con el servidor.')
+    }
   }
 
   return (
     <div className="modal-overlay">
-      <div className="modal" style={{ maxWidth: 620 }}>
+      <div className="modal" style={{ maxWidth: 500 }}>
         <div className="modal-header">
-          <div>
-            <h3>Registrar Nuevo Cliente</h3>
-            <p>Complete los detalles del cliente para registrarlo.</p>
+          <h3>Nuevo Registro de Cliente</h3>
+          <button className="btn btn-sm" onClick={onClose}>✕</button>
+        </div>
+
+        <form onSubmit={handleSubmit} style={{ padding: '0 20px 20px 20px' }}>
+          <div className="field">
+            <label>RTN / Identidad</label>
+            <input className="input" type="text" name="RTN" value={formData.RTN} onChange={handleChange} required />
+          </div>
+          <div className="field">
+            <label>Nombre Completo</label>
+            <input className="input" type="text" name="name" value={formData.name} onChange={handleChange} required />
+          </div>
+          <div className="field">
+            <label>Correo Electrónico</label>
+            <input className="input" type="email" name="email" value={formData.email} onChange={handleChange} required />
+          </div>
+          <div className="field">
+            <label>Teléfono</label>
+            <input className="input" type="text" name="telephoneNumber" value={formData.telephoneNumber} onChange={handleChange} required />
+          </div>
+          <div className="field">
+            <label>Dirección</label>
+            <textarea className="textarea" name="address" value={formData.address} onChange={handleChange} />
           </div>
 
-          <button className="btn btn-sm" onClick={onClose}>
-            ✕
+          <button type="submit" className="btn btn-green btn-block" style={{ marginTop: 20 }}>
+            ✔ Registrar en Sistema
           </button>
-        </div>
-
-        <div className="card" style={{ padding: 26 }}>
-          <h2 style={{ textAlign: 'center', marginTop: 0 }}>Crear Nuevo Cliente</h2>
-          <p style={{ textAlign: 'center', color: '#6b7280', marginBottom: 24 }}>
-            Complete los datos del cliente
-          </p>
-
-          <form onSubmit={handleSubmit}>
-            <div className="field">
-              <label>Nombre Completo</label>
-              <input
-                className="input"
-                type="text"
-                name="nombre"
-                value={formData.nombre}
-                onChange={handleChange}
-              />
-            </div>
-
-            <div className="field">
-              <label>Correo Electrónico</label>
-              <input
-                className="input"
-                type="email"
-                name="correo"
-                value={formData.correo}
-                onChange={handleChange}
-              />
-            </div>
-
-            <div className="field">
-              <label>Teléfono</label>
-              <input
-                className="input"
-                type="text"
-                name="telefono"
-                placeholder="9999-9999"
-                value={formData.telefono}
-                onChange={handleChange}
-              />
-            </div>
-
-            <div className="field">
-              <label>Dirección</label>
-              <textarea
-                className="textarea"
-                name="direccion"
-                value={formData.direccion}
-                onChange={handleChange}
-              />
-            </div>
-
-            <button type="submit" className="btn btn-green btn-block">
-              Registrar Cliente
-            </button>
-          </form>
-        </div>
+        </form>
       </div>
     </div>
   )

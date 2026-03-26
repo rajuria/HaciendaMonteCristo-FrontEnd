@@ -1,17 +1,85 @@
 import { useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
 
-const productos = [
-  { id: 1, nombre: 'Café Orgánico Premium', precio: 150, stock: 200 },
-  { id: 2, nombre: 'Frijoles Negros', precio: 80, stock: 150 },
-  { id: 3, nombre: 'Arroz Integral', precio: 95, stock: 300 },
-  { id: 4, nombre: 'Miel de Abeja Natural', precio: 120, stock: 75 },
-  { id: 5, nombre: 'Azúcar Morena', precio: 60, stock: 250 },
-  { id: 6, nombre: 'Aceite de Coco', precio: 180, stock: 100 },
-]
+function ProductoCard({ producto, onAgregarAlCarrito }) {
+  const [imagenUrl, setImagenUrl] = useState(null)
 
+  useEffect(() => {
+    const fetchImagen = async () => {
+      try {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/images/get/${producto.productID}`);
+        const json = await response.json();
+
+        if (response.ok && json.data && json.data.length > 0) {
+          const objetoImagen = json.data; 
+          
+          if (objetoImagen && objetoImagen[0] && objetoImagen[0].image) {
+            setImagenUrl(objetoImagen[0].image); 
+          }
+        }
+      } catch (error) {
+        console.error(`Error de red al cargar imagen para ${producto.productID}:`, error);
+      }
+    };
+
+    fetchImagen();
+  }, [producto.productID]);
+
+  return (
+    <div className="product-card">
+      <div className="product-image-container" style={{ height: '150px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f5f5f5', borderRadius: '8px', marginBottom: '15px', overflow: 'hidden' }}>
+        {imagenUrl ? (
+          <img src={imagenUrl} alt={producto.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        ) : (
+          <span style={{ fontSize: '3rem' }}>📦</span>
+        )}
+      </div>
+      
+      <h3 className="product-title">{producto.name}</h3>
+
+      <div className="product-row">
+        <div className="product-price">L. {Number(producto.currentPrice).toFixed(2)}</div>
+        <span className="badge badge-stock">Stock: {producto.currentStock}</span>
+      </div>
+
+      <button
+        className="btn btn-green btn-block"
+        onClick={() => onAgregarAlCarrito(producto)}
+      >
+        🛒 Agregar al Carrito
+      </button>
+    </div>
+  )
+}
+
+// Componente Principal de la Página
 export default function ClienteProductosPage() {
   const navigate = useNavigate()
   const usuario = JSON.parse(localStorage.getItem('usuario'))
+
+  const [productos, setProductos] = useState([])
+  const [cargando, setCargando] = useState(true)
+
+  useEffect(() => {
+    const fetchProductos = async () => {
+      try {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/products/get/stock`);
+        const json = await response.json();
+        
+        if (response.ok) {
+          setProductos(json.data);
+        } else {
+          console.error('Error al cargar catálogo:', json.error);
+        }
+      } catch (error) {
+        console.error('Error de red:', error);
+      } finally {
+        setCargando(false);
+      }
+    };
+
+    fetchProductos();
+  }, []);
 
   const cerrarSesion = () => {
     localStorage.removeItem('usuario')
@@ -21,16 +89,16 @@ export default function ClienteProductosPage() {
   const agregarAlCarrito = (producto) => {
     const carritoActual = JSON.parse(localStorage.getItem('carrito')) || []
 
-    const productoExistente = carritoActual.find((item) => item.id === producto.id)
+    const productoExistente = carritoActual.find((item) => item.productID === producto.productID)
 
     let nuevoCarrito
 
     if (productoExistente) {
       nuevoCarrito = carritoActual.map((item) =>
-        item.id === producto.id
+        item.productID === producto.productID
           ? {
               ...item,
-              cantidad: item.cantidad + 1 <= item.stock ? item.cantidad + 1 : item.cantidad,
+              cantidad: item.cantidad + 1 <= item.currentStock ? item.cantidad + 1 : item.cantidad,
             }
           : item
       )
@@ -58,6 +126,9 @@ export default function ClienteProductosPage() {
             <button className="btn" onClick={() => navigate('/home')}>
               ← Volver al Inicio
             </button>
+            <button className="btn btn-danger" onClick={cerrarSesion} style={{ marginLeft: '10px' }}>
+              Cerrar Sesión
+            </button>
           </div>
         </div>
       </header>
@@ -66,26 +137,21 @@ export default function ClienteProductosPage() {
         <h2 className="page-title">Productos Disponibles</h2>
         <p className="page-subtitle">Seleccione los productos que desea ordenar</p>
 
-        <div className="product-grid">
-          {productos.map((producto) => (
-            <div className="product-card" key={producto.id}>
-              <div className="product-image">📦</div>
-              <h3 className="product-title">{producto.nombre}</h3>
-
-              <div className="product-row">
-                <div className="product-price">L. {producto.precio.toFixed(2)}</div>
-                <span className="badge badge-stock">Stock: {producto.stock}</span>
-              </div>
-
-              <button
-                className="btn btn-green btn-block"
-                onClick={() => agregarAlCarrito(producto)}
-              >
-                🛒 Agregar al Carrito
-              </button>
-            </div>
-          ))}
-        </div>
+        {cargando ? (
+          <p style={{ textAlign: 'center', padding: '2rem' }}>Cargando catálogo disponible...</p>
+        ) : productos.length === 0 ? (
+          <p style={{ textAlign: 'center', padding: '2rem' }}>Lo sentimos, no hay productos en stock en este momento.</p>
+        ) : (
+          <div className="product-grid">
+            {productos.map((producto) => (
+              <ProductoCard 
+                key={producto.productID} 
+                producto={producto} 
+                onAgregarAlCarrito={agregarAlCarrito} 
+              />
+            ))}
+          </div>
+        )}
       </main>
     </div>
   )

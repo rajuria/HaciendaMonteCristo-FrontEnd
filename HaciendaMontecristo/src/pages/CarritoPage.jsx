@@ -15,12 +15,13 @@ export default function CarritoPage() {
     localStorage.setItem('carrito', JSON.stringify(nuevoCarrito))
   }
 
-  const actualizarCantidad = (id, nuevaCantidad) => {
+  const actualizarCantidad = (productID, nuevaCantidad) => {
     if (!nuevaCantidad || nuevaCantidad < 1) return
 
     const nuevoCarrito = carrito.map((item) => {
-      if (item.id === id) {
-        const cantidadFinal = nuevaCantidad > item.stock ? item.stock : nuevaCantidad
+      if (item.productID === productID) {
+        // Asegurarse de no exceder el currentStock
+        const cantidadFinal = nuevaCantidad > item.currentStock ? item.currentStock : nuevaCantidad
         return { ...item, cantidad: cantidadFinal }
       }
       return item
@@ -29,13 +30,13 @@ export default function CarritoPage() {
     guardarCarrito(nuevoCarrito)
   }
 
-  const aumentarCantidad = (id) => {
+  const aumentarCantidad = (productID) => {
     const nuevoCarrito = carrito.map((item) => {
-      if (item.id === id) {
+      if (item.productID === productID) {
         const nuevaCantidad = item.cantidad + 1
         return {
           ...item,
-          cantidad: nuevaCantidad > item.stock ? item.stock : nuevaCantidad,
+          cantidad: nuevaCantidad > item.currentStock ? item.currentStock : nuevaCantidad,
         }
       }
       return item
@@ -44,9 +45,9 @@ export default function CarritoPage() {
     guardarCarrito(nuevoCarrito)
   }
 
-  const disminuirCantidad = (id) => {
+  const disminuirCantidad = (productID) => {
     const nuevoCarrito = carrito.map((item) => {
-      if (item.id === id) {
+      if (item.productID === productID) {
         const nuevaCantidad = item.cantidad - 1
         return {
           ...item,
@@ -59,13 +60,17 @@ export default function CarritoPage() {
     guardarCarrito(nuevoCarrito)
   }
 
-  const eliminarProducto = (id) => {
-    const nuevoCarrito = carrito.filter((item) => item.id !== id)
+  const eliminarProducto = (productID) => {
+    const nuevoCarrito = carrito.filter((item) => item.productID !== productID)
     guardarCarrito(nuevoCarrito)
   }
 
-  const subtotal = carrito.reduce((acc, item) => acc + item.precio * item.cantidad, 0)
+  // Actualizados para usar currentPrice
+  const subtotal = carrito.reduce((acc, item) => acc + (Number(item.currentPrice) * item.cantidad), 0)
   const totalProductos = carrito.reduce((acc, item) => acc + item.cantidad, 0)
+
+  // Obtener el usuario activo para el header
+  const usuario = JSON.parse(localStorage.getItem('usuario'))
 
   return (
     <div className="page-shell">
@@ -77,7 +82,7 @@ export default function CarritoPage() {
 
           <div className="brand green" style={{ textAlign: 'right' }}>
             <h1>Hacienda Montecristo</h1>
-            <small>Sofía Hernández</small>
+            <small>{usuario?.usuario || 'Cliente'}</small>
           </div>
         </div>
       </header>
@@ -95,18 +100,19 @@ export default function CarritoPage() {
               </div>
             ) : (
               carrito.map((item) => (
-                <div className="cart-item" key={item.id} style={{ marginBottom: 16 }}>
+                <div className="cart-item" key={item.productID} style={{ marginBottom: 16 }}>
                   <div>
-                    <h3 style={{ margin: 0, fontSize: '1.2rem' }}>{item.nombre}</h3>
+                    {/* Usando item.name y item.currentPrice */}
+                    <h3 style={{ margin: 0, fontSize: '1.2rem' }}>{item.name}</h3>
                     <p style={{ margin: '10px 0 0', color: '#4b5563' }}>
-                      L. {item.precio.toFixed(2)} c/u
+                      L. {Number(item.currentPrice).toFixed(2)} c/u
                     </p>
                   </div>
 
                   <div className="quantity-control">
                     <button
                       className="qty-btn"
-                      onClick={() => disminuirCantidad(item.id)}
+                      onClick={() => disminuirCantidad(item.productID)}
                     >
                       -
                     </button>
@@ -114,22 +120,22 @@ export default function CarritoPage() {
                     <input
                       type="number"
                       min="1"
-                      max={item.stock}
+                      max={item.currentStock}
                       value={item.cantidad}
-                      onChange={(e) => actualizarCantidad(item.id, Number(e.target.value))}
+                      onChange={(e) => actualizarCantidad(item.productID, Number(e.target.value))}
                       className="qty-input"
                     />
 
                     <button
                       className="qty-btn"
-                      onClick={() => aumentarCantidad(item.id)}
+                      onClick={() => aumentarCantidad(item.productID)}
                     >
                       +
                     </button>
                   </div>
 
                   <button
-                    onClick={() => eliminarProducto(item.id)}
+                    onClick={() => eliminarProducto(item.productID)}
                     className="delete-btn"
                     title="Eliminar producto"
                   >
@@ -137,7 +143,7 @@ export default function CarritoPage() {
                   </button>
 
                   <div className="total-box">
-                    L. {(item.precio * item.cantidad).toFixed(2)}
+                    L. {(Number(item.currentPrice) * item.cantidad).toFixed(2)}
                   </div>
                 </div>
               ))

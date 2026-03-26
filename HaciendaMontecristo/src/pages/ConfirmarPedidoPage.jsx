@@ -4,44 +4,85 @@ import { Link, useNavigate } from 'react-router-dom'
 export default function ConfirmarPedidoPage() {
   const [carrito, setCarrito] = useState([])
   const [metodoPago, setMetodoPago] = useState('efectivo')
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const navigate = useNavigate()
 
-  const [entrega, setEntrega] = useState({
-    nombre: 'Sofía Hernández',
-    correo: 'sofia@email.com',
-    telefono: '9999-9999',
-    direccion: 'Tegucigalpa, Col. Palmira',
-  })
+  const [clientes, setClientes] = useState([])
+  const [selectedRTN, setSelectedRTN] = useState('')
 
   useEffect(() => {
     const carritoGuardado = JSON.parse(localStorage.getItem('carrito')) || []
+    if (carritoGuardado.length === 0) {
+      navigate('/cliente/productos')
+    }
     setCarrito(carritoGuardado)
-  }, [])
 
-  const total = carrito.reduce((acc, item) => acc + item.precio * item.cantidad, 0)
+    const fetchClientes = async () => {
+      try {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/clients/get`);
+        const json = await response.json();
+        
+        if (response.ok && json.data) {
+          setClientes(json.data);
+        }
+      } catch (error) {
+        console.error("Error al cargar clientes:", error);
+      }
+    };
 
-  const handleChangeEntrega = (e) => {
-    const { name, value } = e.target
-    setEntrega((prev) => ({
-      ...prev,
-      [name]: value,
-    }))
-  }
+    fetchClientes();
+  }, [navigate])
 
-  const confirmarPedidoFinal = () => {
-    if (
-      !entrega.nombre.trim() ||
-      !entrega.correo.trim() ||
-      !entrega.telefono.trim() ||
-      !entrega.direccion.trim()
-    ) {
-      alert('Complete toda la información de entrega.')
+  const total = carrito.reduce((acc, item) => acc + Number(item.currentPrice) * item.cantidad, 0)
+
+  const clienteSeleccionado = clientes.find(c => c.RTN === selectedRTN)
+
+  const confirmarPedidoFinal = async () => {
+    if (!selectedRTN) {
+      alert('Por favor, seleccione un cliente para la facturación y entrega.')
       return
     }
 
-    alert('Pedido confirmado con éxito')
-    localStorage.removeItem('carrito')
-    navigate('/cliente/productos')
+    setIsSubmitting(true)
+
+    try {
+      const orderPayload = {
+        RTN: selectedRTN,
+        metodoPago: metodoPago,
+        total: total,
+        status: 'Pendiente',
+        
+        orderDetails: carrito.map(item => ({
+          productID: item.productID,
+          quantity: item.cantidad,
+          price: Number(item.currentPrice)
+        }))
+      }
+
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/orders/create`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(orderPayload),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        alert(`¡Pedido confirmado con éxito! \nSu número de orden es: ${data.orderID}`);
+        
+        localStorage.removeItem('carrito');
+        navigate('/cliente/productos');
+      } else {
+        alert(`Hubo un problema: ${data.error || 'Error desconocido'}`);
+      }
+    } catch (error) {
+      console.error('Error de red al crear orden:', error)
+      alert('Error de conexión al servidor.')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -65,11 +106,9 @@ export default function ConfirmarPedidoPage() {
           ) : (
             <>
               {carrito.map((item) => (
-                <div className="confirmar-row" key={item.id}>
-                  <span>
-                    {item.nombre} x {item.cantidad}
-                  </span>
-                  <strong>L. {(item.precio * item.cantidad).toFixed(2)}</strong>
+                <div className="confirmar-row" key={item.productID}>
+                  <span>{item.name} x {item.cantidad}</span>
+                  <strong>L. {(Number(item.currentPrice) * item.cantidad).toFixed(2)}</strong>
                 </div>
               ))}
 
@@ -83,7 +122,6 @@ export default function ConfirmarPedidoPage() {
 
         <div className="confirmar-card">
           <h3>Forma de Pago</h3>
-
           <label className="metodo-pago">
             <input
               type="radio"
@@ -114,62 +152,44 @@ export default function ConfirmarPedidoPage() {
         </div>
 
         <div className="confirmar-card">
-          <h3>Información de Entrega</h3>
+          <h3>Información de Facturación y Entrega</h3>
 
           <div className="field">
-            <label>Cliente</label>
-            <input
-              type="text"
-              name="nombre"
-              value={entrega.nombre}
-              onChange={handleChangeEntrega}
-              className="input"
-            />
+            <label>Seleccione un Cliente</label>
+            <select 
+              className="input" 
+              value={selectedRTN} 
+              onChange={(e) => setSelectedRTN(e.target.value)}
+              style={{ padding: '10px', width: '100%', borderRadius: '4px', border: '1px solid #ccc' }}
+            >
+              <option value="">-- Elija un cliente registrado --</option>
+              {clientes.map(cliente => (
+                <option key={cliente.RTN} value={cliente.RTN}>
+                  {cliente.name} (RTN: {cliente.RTN})
+                </option>
+              ))}
+            </select>
           </div>
 
-          <div className="field">
-            <label>Correo Electrónico</label>
-            <input
-              type="email"
-              name="correo"
-              value={entrega.correo}
-              onChange={handleChangeEntrega}
-              className="input"
-            />
-          </div>
+          {clienteSeleccionado && (
+            <div style={{ marginTop: '15px', padding: '15px', backgroundColor: '#f9fafb', borderRadius: '8px', border: '1px solid #e5e7eb' }}>
+              <p style={{ margin: '0 0 8px 0' }}><strong>Email:</strong> {clienteSeleccionado.email}</p>
+              <p style={{ margin: '0 0 8px 0' }}><strong>Teléfono:</strong> {clienteSeleccionado.telephoneNumber}</p>
+              <p style={{ margin: '0' }}><strong>Dirección:</strong> {clienteSeleccionado.address}</p>
+            </div>
+          )}
 
-          <div className="field">
-            <label>Teléfono</label>
-            <input
-              type="text"
-              name="telefono"
-              value={entrega.telefono}
-              onChange={handleChangeEntrega}
-              className="input"
-            />
-          </div>
-
-          <div className="field">
-            <label>Dirección de Entrega</label>
-            <textarea
-              name="direccion"
-              value={entrega.direccion}
-              onChange={handleChangeEntrega}
-              className="textarea"
-            />
-          </div>
-
-          <div className="confirmar-actions">
-            <button className="btn" onClick={() => navigate('/cliente/carrito')}>
+          <div className="confirmar-actions" style={{ marginTop: '20px' }}>
+            <button className="btn" onClick={() => navigate('/cliente/carrito')} disabled={isSubmitting}>
               Cancelar
             </button>
 
             <button
               className="btn btn-green"
               onClick={confirmarPedidoFinal}
-              disabled={carrito.length === 0}
+              disabled={carrito.length === 0 || !selectedRTN || isSubmitting}
             >
-              Confirmar Pedido
+              {isSubmitting ? 'Procesando...' : 'Confirmar Pedido'}
             </button>
           </div>
         </div>

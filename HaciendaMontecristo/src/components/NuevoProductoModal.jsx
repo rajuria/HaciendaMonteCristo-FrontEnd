@@ -3,10 +3,10 @@ import '../styles/pages.css'
 
 export default function NuevoProductoModal({ onClose, onSave }) {
   const [formData, setFormData] = useState({
-    codigo: '',
-    nombre: '',
-    precio: '',
-    stock: '',
+    productID: '',
+    name: '',
+    currentPrice: '',
+    currentStock: '',
   })
 
   const handleChange = (e) => {
@@ -21,33 +21,32 @@ export default function NuevoProductoModal({ onClose, onSave }) {
     e.preventDefault()
 
     if (
-      !formData.codigo.trim() ||
-      !formData.nombre.trim() ||
-      formData.precio === '' ||
-      formData.stock === ''
+      !String(formData.productID).trim() ||
+      !formData.name.trim() ||
+      formData.currentPrice === '' ||
+      formData.currentStock === ''
     ) {
       alert('Complete todos los campos.')
       return
     }
 
     const nuevoProducto = {
-      id: Date.now(),
-      codigo: formData.codigo.trim(),
-      nombre: formData.nombre.trim(),
-      precio: Number(formData.precio),
-      stock: Number(formData.stock),
+      productID: Number(formData.productID), 
+      name: formData.name.trim(),
+      currentPrice: Number(formData.currentPrice),
+      currentStock: Number(formData.currentStock),
     }
 
+    // Enviamos el objeto a AdminBodegaPage para que haga el POST
     onSave(nuevoProducto)
 
+    // Solo reiniciamos el formulario aquí. AdminBodegaPage se encarga de cerrar el modal.
     setFormData({
-      codigo: '',
-      nombre: '',
-      precio: '',
-      stock: '',
+      productID: '',
+      name: '',
+      currentPrice: '',
+      currentStock: '',
     })
-
-    onClose()
   }
 
   return (
@@ -66,12 +65,12 @@ export default function NuevoProductoModal({ onClose, onSave }) {
 
         <form onSubmit={handleSubmit}>
           <div className="field">
-            <label>Código</label>
+            <label>Código (ID del Producto)</label>
             <input
               className="input"
-              type="text"
-              name="codigo"
-              value={formData.codigo}
+              type="number" // Cambiado a number para coincidir con la DB
+              name="productID"
+              value={formData.productID}
               onChange={handleChange}
             />
           </div>
@@ -81,8 +80,8 @@ export default function NuevoProductoModal({ onClose, onSave }) {
             <input
               className="input"
               type="text"
-              name="nombre"
-              value={formData.nombre}
+              name="name"
+              value={formData.name}
               onChange={handleChange}
             />
           </div>
@@ -92,8 +91,8 @@ export default function NuevoProductoModal({ onClose, onSave }) {
             <input
               className="input"
               type="number"
-              name="precio"
-              value={formData.precio}
+              name="currentPrice"
+              value={formData.currentPrice}
               onChange={handleChange}
               min="0"
               step="0.01"
@@ -105,8 +104,8 @@ export default function NuevoProductoModal({ onClose, onSave }) {
             <input
               className="input"
               type="number"
-              name="stock"
-              value={formData.stock}
+              name="currentStock"
+              value={formData.currentStock}
               onChange={handleChange}
               min="0"
             />

@@ -12,6 +12,7 @@ import AdminSistemaClientesPage from './pages/AdminSistemaClientesPage'
 import GestionUsuariosPage from './pages/GestionUsuariosPage'
 import AsignarPedidosPage from './pages/AsignarPedidosPage'
 import ReportesPage from './pages/ReportesPage'
+import MantenimientoPage from './pages/MantenimientoPage'
 
 function App() {
   return (
@@ -33,6 +34,7 @@ function App() {
       <Route path="/admin-sistema/usuarios" element={<GestionUsuariosPage />} />
       <Route path="/admin-sistema/asignar-pedidos" element={<AsignarPedidosPage />} />
       <Route path="/admin-sistema/reportes" element={<ReportesPage />} />
+      <Route path="/admin-sistema/mantenimiento" element={<MantenimientoPage />} />
     </Routes>
   )
 }
